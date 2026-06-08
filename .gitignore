@@ -1,0 +1,48 @@
+# ---- ModelSim / Questa ----
+work/
+transcript
+vsim.wlf
+*.wlf
+*.vstf
+modelsim.ini
+*.mti
+wlf*
+.modelsim
+
+# ---- Quartus ----
+db/
+incremental_db/
+output_files/
+*.qws
+*.rpt
+*.summary
+*.sof
+*.pof
+*.jdi
+*.qpf.bak
+
+# ---- Waveforms / sim output ----
+*.vcd
+*.fst
+*.ghw
+
+# ---- C++ build ----
+*.o
+*.obj
+*.exe
+*.out
+a.out
+build/
+
+# ---- Python (later phase) ----
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ---- Editor / OS ----
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
