@@ -28,8 +28,24 @@ module lineBuffer (pixelIn, clk, pixelOut);
 				shiftReg[i] <= shiftReg[i - 1];
 		end
 	
-	assign pixelOut = shiftReg[IMAGE_SIZE - 1];	
+	assign pixelOut = shiftReg[IMAGE_SIZE - 1];
 	
-//MAC=====================================================================================================
 //windowRegister==========================================================================================
+module windowReg(pixelOut2, pixelOut1, pixelOut0, clk, windowRegOut);
+		
+		//declarations
+		parameter PIXEL_WIDTH = 8;
+		parameter KERNEL_SIZE = 3;
+		
+		input wire [PIXEL_WIDTH - 1 : 0] pixelOutlive, pixelOut1, pixelOut0;
+		input wire clk;
+		output wire [KERNEL_SIZE * KERNEL_SIZE * PIXEL_WIDTH - 1:0] windowRegOut;
+		
+		reg [PIXEL_WIDTH - 1:0][PIXEL_WIDTH - 1:0];
+//MAC=====================================================================================================
+
+module mac ();
+	//declarations
+	parameter KERNEL_SIZE = 3;
+	parameter 
 //FSM=====================================================================================================
