@@ -59,6 +59,10 @@ module windowReg(pixelOutLive, pixelOut1, pixelOut0, clk, windowOut);
 						end
 			end 
 			
+			assign windowOut = {window[2][2], window[2][1], window[2][0], 
+									  window[1][2], window[1][1], window[1][0], 
+									  window[0][2], window[0][1], window[0][0]};
+			
 			
 			
 			
