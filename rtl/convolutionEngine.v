@@ -107,3 +107,35 @@ module mac (windowOut, macOut);
 	
 endmodule	
 //FSM=====================================================================================================
+
+module validity (clk, valid);
+
+	parameter IMAGE_SIZE = 5;
+	parameter COUNT_SIZE = $clog2(IMAGE_SIZE * IMAGE_SIZE);
+	parameter COL_SIZE = $clog2(IMAGE_SIZE);
+	
+	input wire clk;
+	output wire valid;
+	reg [COUNT_SIZE - 1:0] counter;
+	wire [COL_SIZE - 1:0] column;
+	wire [COL_SIZE -1:0] row;
+	
+	initial
+		begin
+			counter = 0;
+		end
+	
+	always @(posedge clk)
+		begin
+			counter <= counter + 1;
+		end 
+		
+	
+		
+	
+
+	
+	
+	
+		
+	
