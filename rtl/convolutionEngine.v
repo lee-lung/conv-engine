@@ -4,7 +4,7 @@ module convTop ();
 	
 	//Parameters
 	
-	
+endmodule	
 //Line buffer=============================================================================================
 module lineBuffer (pixelIn, clk, pixelOut);
 
@@ -29,6 +29,8 @@ module lineBuffer (pixelIn, clk, pixelOut);
 		end
 	
 	assign pixelOut = shiftReg[IMAGE_SIZE - 1];
+
+endmodule
 	
 //windowRegister==========================================================================================
 module windowReg(pixelOutLive, pixelOut1, pixelOut0, clk, windowOut);
@@ -61,22 +63,47 @@ module windowReg(pixelOutLive, pixelOut1, pixelOut0, clk, windowOut);
 			
 			assign windowOut = {window[2][2], window[2][1], window[2][0], 
 									  window[1][2], window[1][1], window[1][0], 
-									  window[0][2], window[0][1], window[0][0]};
-			
-			
-			
-			
-		
-		
-					
-
-			
-				
-		
+									  window[0][2], window[0][1], window[0][0]};		
+									  
+endmodule
 //MAC=====================================================================================================
 
-module mac ();
+module mac (windowOut, macOut);
+	
 	//declarations
 	parameter KERNEL_SIZE = 3;
-	parameter 
+	parameter PIXEL_WIDTH = 8;
+	parameter WEIGHT_WIDTH = 8;
+	parameter MAC_WIDTH = PIXEL_WIDTH + WEIGHT_WIDTH + $clog2(KERNEL_SIZE * KERNEL_SIZE);
+
+	
+	input wire[KERNEL_SIZE * KERNEL_SIZE * PIXEL_WIDTH - 1:0] windowOut;
+	output wire [MAC_WIDTH - 1:0] macOut;
+	reg [PIXEL_WIDTH - 1:0] kernel[0:KERNEL_SIZE * KERNEL_SIZE - 1];
+	
+	initial
+		begin
+			kernel[0] = 1;
+			kernel[1] = 1;
+			kernel[2] = 1;
+			kernel[3] = 1;
+			kernel[4] = 1;
+			kernel[5] = 1;
+			kernel[6] = 1;
+			kernel[7] = 1;
+			kernel[8] = 1;
+		end
+	
+	integer i;
+	reg [MAC_WIDTH - 1:0] sum;
+	always @(*)
+		begin
+		sum = 0;
+			for (i = 0; i < KERNEL_SIZE * KERNEL_SIZE; i = i + 1)
+				sum = sum + windowOut[i*PIXEL_WIDTH +: PIXEL_WIDTH] * kernel[i];
+		end
+		
+	assign macOut = sum;
+	
+endmodule	
 //FSM=====================================================================================================
