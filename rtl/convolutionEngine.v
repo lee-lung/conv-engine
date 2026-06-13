@@ -130,6 +130,9 @@ module validity (clk, valid);
 			counter <= counter + 1;
 		end 
 		
+	assign column = (counter % (IMAGE_SIZE)) - 1;
+	assign row = (counter - 1 / IMAGE_SIZE);
+		
 	
 		
 	
