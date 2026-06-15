@@ -128,12 +128,18 @@ module validity (clk, valid);
 	always @(posedge clk)
 		begin
 			counter <= counter + 1;
+			
+			if (counter == IMAGE_SIZE * IMAGE_SIZE)
+				counter <= 0;
+			
 		end 
 		
-	assign column = (counter % (IMAGE_SIZE)) - 1;
-	assign row = (counter - 1 / IMAGE_SIZE);
-		
+	assign column = counter % IMAGE_SIZE;
+	assign row = counter  / IMAGE_SIZE;
 	
+	assign valid = (column < 3) && (row < 3);
+		
+endmodule
 		
 	
 
