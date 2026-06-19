@@ -116,7 +116,9 @@ module validity (clk, valid);
 	parameter KERNEL_SIZE = 3;
 	
 	input wire clk;
+	input wire pixel_valid;
 	output reg valid;
+	
 	reg [COUNT_SIZE - 1:0] counter;
 	wire [COL_SIZE - 1:0] column;
 	wire [COL_SIZE -1:0] row;
@@ -126,25 +128,26 @@ module validity (clk, valid);
 	initial
 		begin
 			counter = 0;
+			valid = 0;
 		end
 		
 	assign column = counter % IMAGE_SIZE;
-	assign row = counter  / IMAGE_SIZE;
+	assign row = counter  / IMAGE_SIZE;	
 	assign isValid = (column >= KERNEL_SIZE - 1) && (row >= KERNEL_SIZE - 1);
 	
 	always @(posedge clk)
 		begin
-			counter <= counter + 1;
-			
-			if (counter == IMAGE_SIZE * IMAGE_SIZE)
-				counter <= 0;
-			valid <= isValid;
-			
-		end 
-		
-	assign column = counter % IMAGE_SIZE;
-	assign row = counter  / IMAGE_SIZE;
-		
+			if (pixel_valid)
+				begin					
+					if (counter == IMAGE_SIZE * IMAGE_SIZE - 1)
+						counter <= 0;
+						
+					else
+						counter <= counter + 1;
+
+					valid <= isValid;
+				end
+		end 		
 endmodule
 
 //=========================================================================================================
