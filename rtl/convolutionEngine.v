@@ -1,18 +1,41 @@
 //convTop=================================================================================================
 
-module convTop ();
+module convTop (clk, rst_n, pixelIn, macOut, pixel_valid, valid);
+
+	parameter PIXEL_WIDTH = 8;
+	parameter KERNEL_SIZE = 3;
+	parameter WEIGHT_WIDTH = 8;
+	parameter MAC_WIDTH = PIXEL_WIDTH + WEIGHT_WIDTH + $clog2(KERNEL_SIZE * KERNEL_SIZE);
+
+	input clk;
+	input rst_n;
+	input wire [PIXEL_WIDTH - 1:0] pixelIn;
+	input wire pixel_valid;
+	output wire signed [MAC_WIDTH - 1:0] macOut;
+		output wire valid;
+
 	
+	wire [PIXEL_WIDTH - 1:0] pixelOut0;
+	wire [PIXEL_WIDTH - 1:0] pixelOut1;
+	wire [KERNEL_SIZE * KERNEL_SIZE * PIXEL_WIDTH - 1:0] windowOut;
 	
+	lineBuffer lb1 (pixelIn, clk, pixelOut1, pixel_valid, rst_n);
+	lineBuffer lb0 (pixelOut1, clk, pixelOut0, pixel_valid, rst_n);
+	windowReg r1 (pixelIn, pixelOut1, pixelOut0, clk, windowOut, pixel_valid, rst_n);
+	mac m1 (windowOut, macOut);
+	validity v1 (clk, valid, pixel_valid, rst_n);
 	
 endmodule	
 //Line buffer=============================================================================================
-module lineBuffer (pixelIn, clk, pixelOut);
+module lineBuffer (pixelIn, clk, pixelOut, pixel_valid, rst_n);
 
 	//declarations 
 	parameter IMAGE_SIZE = 5;
 	parameter PIXEL_WIDTH = 8;
 	input wire [PIXEL_WIDTH - 1:0] pixelIn;
 	input wire clk;
+	input wire pixel_valid;
+	input wire rst_n;
 	output wire [PIXEL_WIDTH - 1:0] pixelOut;
 
 	
@@ -23,17 +46,27 @@ module lineBuffer (pixelIn, clk, pixelOut);
 	
 	always @(posedge clk)
 		begin
-			shiftReg[0] <= pixelIn;
-			for (i = 1; i < IMAGE_SIZE; i = i+ 1)
-				shiftReg[i] <= shiftReg[i - 1];
+			if (!rst_n)
+				begin
+					for (i = 0; i < IMAGE_SIZE; i = i + 1)
+						shiftReg[i] <= 0;					
+				end
+			else 
+				begin
+					if (pixel_valid)
+						begin
+							shiftReg[0] <= pixelIn;
+							for (i = 1; i < IMAGE_SIZE; i = i+ 1)
+								shiftReg[i] <= shiftReg[i - 1];
+						end				
+				end
 		end
 	
 	assign pixelOut = shiftReg[IMAGE_SIZE - 1];
-
 endmodule
 	
 //windowRegister==========================================================================================
-module windowReg(pixelOutLive, pixelOut1, pixelOut0, clk, windowOut);
+module windowReg(pixelOutLive, pixelOut1, pixelOut0, clk, windowOut, pixel_valid, rst_n);
 		
 		//declarations
 		parameter PIXEL_WIDTH = 8;
@@ -41,6 +74,8 @@ module windowReg(pixelOutLive, pixelOut1, pixelOut0, clk, windowOut);
 		
 		input wire [PIXEL_WIDTH - 1:0] pixelOutLive, pixelOut1, pixelOut0;
 		input wire clk;
+		input wire pixel_valid;
+		input wire rst_n;
 		output wire [KERNEL_SIZE * KERNEL_SIZE * PIXEL_WIDTH - 1:0] windowOut;
 		
 		reg [PIXEL_WIDTH - 1:0] window [0:KERNEL_SIZE - 1][0:KERNEL_SIZE - 1];
@@ -49,16 +84,30 @@ module windowReg(pixelOutLive, pixelOut1, pixelOut0, clk, windowOut);
 		
 		always @(posedge clk)
 			begin
-				window[0][0] <= pixelOut0;
-				window[1][0] <= pixelOut1;
-				window[2][0] <= pixelOutLive;
-					for (i = 1; i < KERNEL_SIZE; i = i + 1)
+				if (!rst_n)
+					begin
+						for (i = 0; i < KERNEL_SIZE; i = i + 1)
 						begin
-							for (j = 0; j < KERNEL_SIZE; j  = j + 1)
-								begin
-									window[j][i] <= window[j][i - 1];
-								end 
+							for (j = 0; j < KERNEL_SIZE; j = j + 1)
+								window [j][i] <= 0;
 						end
+					end
+				else
+					begin
+						if (pixel_valid)
+							begin
+								window[0][0] <= pixelOut0;
+								window[1][0] <= pixelOut1;
+								window[2][0] <= pixelOutLive;
+									for (i = 1; i < KERNEL_SIZE; i = i + 1)
+										begin
+											for (j = 0; j < KERNEL_SIZE; j  = j + 1)
+												begin
+													window[j][i] <= window[j][i - 1];
+												end 
+										end
+							end					
+					end
 			end 
 			
 			assign windowOut = {window[2][2], window[2][1], window[2][0], 
@@ -78,8 +127,8 @@ module mac (windowOut, macOut);
 
 	
 	input wire[KERNEL_SIZE * KERNEL_SIZE * PIXEL_WIDTH - 1:0] windowOut;
-	output wire [MAC_WIDTH - 1:0] macOut;
-	reg [PIXEL_WIDTH - 1:0] kernel[0:KERNEL_SIZE * KERNEL_SIZE - 1];
+	output wire signed [MAC_WIDTH - 1:0] macOut;
+	reg signed [WEIGHT_WIDTH - 1:0] kernel[0:KERNEL_SIZE * KERNEL_SIZE - 1];
 	
 	initial
 		begin
@@ -95,12 +144,12 @@ module mac (windowOut, macOut);
 		end
 	
 	integer i;
-	reg [MAC_WIDTH - 1:0] sum;
+	reg signed[MAC_WIDTH - 1:0] sum;
 	always @(*)
 		begin
 		sum = 0;
 			for (i = 0; i < KERNEL_SIZE * KERNEL_SIZE; i = i + 1)
-				sum = sum + windowOut[i*PIXEL_WIDTH +: PIXEL_WIDTH] * kernel[i];
+				sum = sum + $signed({1'b0, windowOut[i*PIXEL_WIDTH +: PIXEL_WIDTH]}) * kernel[i];
 		end
 		
 	assign macOut = sum;
@@ -108,7 +157,7 @@ module mac (windowOut, macOut);
 endmodule	
 //FSM=====================================================================================================
 
-module validity (clk, valid);
+module validity (clk, valid, pixel_valid, rst_n);
 
 	parameter IMAGE_SIZE = 5;
 	parameter COUNT_SIZE = $clog2(IMAGE_SIZE * IMAGE_SIZE);
@@ -117,6 +166,7 @@ module validity (clk, valid);
 	
 	input wire clk;
 	input wire pixel_valid;
+	input wire rst_n;
 	output reg valid;
 	
 	reg [COUNT_SIZE - 1:0] counter;
@@ -137,15 +187,23 @@ module validity (clk, valid);
 	
 	always @(posedge clk)
 		begin
-			if (pixel_valid)
-				begin					
-					if (counter == IMAGE_SIZE * IMAGE_SIZE - 1)
-						counter <= 0;
-						
-					else
-						counter <= counter + 1;
+			if (!rst_n)
+				begin
+					counter <= 0;
+					valid <= 0;
+				end
+			else
+				begin
+					if (pixel_valid)
+						begin					
+							if (counter == IMAGE_SIZE * IMAGE_SIZE - 1)
+								counter <= 0;
+								
+							else
+								counter <= counter + 1;
 
-					valid <= isValid;
+							valid <= isValid;
+						end
 				end
 		end 		
 endmodule
