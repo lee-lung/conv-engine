@@ -1,4 +1,6 @@
-#include <cmath>
+#include <cstdint>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
 
 #define KERNEL_SIZE 3
@@ -69,5 +71,22 @@ int main(void) {
   for (int i = 0; i < convNum; i++) {
     printf("%d\n", convSum[i]);
   }
+
+  std::ofstream imageFile("image.hex");
+  std::ofstream goldenFile("golden.hex");
+
+  for (int row = 0; row < IMAGE_SIZE; row++) {
+    for (int col = 0; col < IMAGE_SIZE; col++) {
+      imageFile << std::setw(2) << std::setfill('0') << std::hex
+                << image[row][col] << '\n';
+    }
+  }
+
+  for (int i = 0; i < convNum; i++) {
+    uint32_t masked = static_cast<uint32_t>(convSum[i]) & 0xFFFFF;
+    goldenFile << std::setw(5) << std::setfill('0') << std::hex << masked
+               << '\n';
+  }
+
   return 0;
 }
